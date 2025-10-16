@@ -157,6 +157,7 @@ int main() {
 
     sim.drawFunction();   // Punto 1
     sim.generateEvents(10000); // Punto 2
+    sim.studyRegenerationUncertainty(10000, 50, 200);
 
     return 0;
 }
