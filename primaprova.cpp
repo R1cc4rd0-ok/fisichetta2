@@ -69,6 +69,20 @@ public:
 
         c2->SaveAs("distribuzione_generata.png");
     }
+
+    // Calcolo dell’integrale della funzione su [xmin, xmax]
+double integral() const {
+    TF1 f_int("f_int", [this](double *x, double *) { return this->f(x[0]); },
+              xmin_, xmax_, 0);
+    return f_int.Integral(xmin_, xmax_);
+}
+
+// Funzione normalizzata (pdf)
+double f_norm(double x) const {
+    double I = integral();
+    return f(x) / I;
+}
+
 };
 
 
