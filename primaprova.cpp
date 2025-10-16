@@ -97,6 +97,53 @@ public:
 
     c2->SaveAs("distribuzione_generata.png");
 }
+
+void studyRegenerationUncertainty(int N = 10000, int B = 50, int nRepeat = 100) const {
+    std::cout << "\n>>> [3.2] Studio dell'incertezza da rigenerazione <<<" << std::endl;
+    std::cout << "N eventi = " << N << ", bin = " << B << ", ripetizioni = " << nRepeat << std::endl;
+
+    TF1 f_gen("f_gen", [this](double *x, double *) { return this->f_norm(x[0]); },
+              xmin_, xmax_, 0);
+
+    // Vettori per media e varianza per bin
+    std::vector<double> sum(B, 0.0);
+    std::vector<double> sum2(B, 0.0);
+
+    for (int rep = 0; rep < nRepeat; ++rep) {
+        TH1D h(Form("h_%d", rep), "Rigenerazioni", B, xmin_, xmax_);
+        for (int i = 0; i < N; ++i) {
+            double x = f_gen.GetRandom();
+            h.Fill(x);
+        }
+
+        // Aggiorna somme e somme dei quadrati
+        for (int b = 1; b <= B; ++b) {
+            double val = h.GetBinContent(b);
+            sum[b - 1]  += val;
+            sum2[b - 1] += val * val;
+        }
+    }
+
+    // Calcola media e deviazione standard per bin
+    TH1D *h_sigma = new TH1D("h_sigma", "Incertezza da rigenerazione; x; #sigma(bin)", B, xmin_, xmax_);
+    for (int b = 1; b <= B; ++b) {
+        double mean = sum[b - 1] / nRepeat;
+        double var  = (sum2[b - 1] / nRepeat) - mean * mean;
+        if (var < 0) var = 0;
+        double sigma = sqrt(var);
+        h_sigma->SetBinContent(b, sigma);
+    }
+
+    // Disegno risultato
+    TCanvas *c4 = new TCanvas("c4", "Incertezza da rigenerazione", 900, 600);
+    h_sigma->SetLineColor(kRed + 1);
+    h_sigma->SetFillColorAlpha(kRed - 7, 0.4);
+    h_sigma->Draw("HIST");
+    c4->SaveAs("uncertainty_regeneration.png");
+
+    std::cout << "→ Salvato grafico: uncertainty_regeneration.png\n" << std::endl;
+}
+
     
 };
 
