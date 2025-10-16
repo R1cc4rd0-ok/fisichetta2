@@ -1,3 +1,5 @@
+// Per compilare: g++ primaprova.cpp `root-config --cflags --libs` -O2 -o primaprova
+
 #include <iostream>
 #include <cmath>
 #include "TCanvas.h"
