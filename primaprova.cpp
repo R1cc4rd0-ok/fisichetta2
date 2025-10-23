@@ -162,6 +162,12 @@ void studyRegenerationUncertainty(int N = 10000, int B = 50, int nRepeat = 100) 
 // RICCARDO METTI QUA IL TUO CODICE
 
 void binsUncertainty () const {
+
+    // Istogramma teorico
+    TH1D h_theory("h_theory", "Incertezza da Bin-Smeering; x; f(x)", nBins, xmin, xmax);
+    for (int i = 1; i <= nBins; ++i)
+        h_theory.SetBinContent(i, f_norm.Eval(h_theory.GetBinCenter(i)));
+    
 // Numero di rigenerazioni per stimare incertezza
     int nTrials = 500;
     TRandom3 rnd(0);
