@@ -181,7 +181,7 @@ void binsUncertainty () const {
 
     // Calcolo media e sigma per ogni bin
     TGraphErrors *g_unc = new TGraphErrors(nBins);
-    for (int i = 1; i <= nBins; ++i) {
+    for (int i = 1; i <= nBins_; ++i) {
         double mean = sum[i-1] / nTrials;
         double sigma = std::sqrt(sum2[i-1]/nTrials - mean*mean);
         double x = h_theory.GetBinCenter(i);
@@ -198,7 +198,6 @@ void binsUncertainty () const {
     c->SaveAs("bin_smeering.png");
 
     std::cout << "Salvato grafico: bin_smeering.png" << std::endl;
-    return 0;
 }
 
 // FINE A QUA RICCARDO
