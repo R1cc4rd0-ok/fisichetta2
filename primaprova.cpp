@@ -28,18 +28,15 @@ public:
     }
 
     // Calcolo dell’integrale una sola volta
-     void computeIntegral() {
+     double getIntegral() {
         TF1 f_int("f_int", [this](double *x, double *) { return this->f(x[0]); },
                   xmin_, xmax_, 0);
-        integral_ = f_int.Integral(xmin_, xmax_);
+        return f_int.Integral(xmin_, xmax_);
     }
-
-    // Restituisce l'integrale
-    double getIntegral() const { return integral_; }
 
     // Funzione normalizzata (PDF)
     double f_norm(double x) const {
-        if (integral_ == 0) {
+        if (getIntegral() == 0) {
             throw std::runtime_error("Integral not computed yet!");
         }
         return f(x) / getIntegral();
