@@ -38,7 +38,7 @@ public:
     double f_norm(double x) const {
         TF1 f_int("f_int", [this](double *x, double *) { return this->f(x[0]); },
                   xmin_, xmax_, 0);
-        return f(x) / f_int->Integral(xmin_, xmax_);
+        return f(x) / f_int.Integral(xmin_, xmax_);
     }
 
     // Disegno della funzione normalizzata
