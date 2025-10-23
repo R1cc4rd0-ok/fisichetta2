@@ -164,7 +164,7 @@ void studyRegenerationUncertainty(int N = 10000, int B = 50, int nRepeat = 100) 
 void binsUncertainty () const {
 
     // Istogramma teorico
-    TH1D h_theory("h_theory", "Incertezza da Bin-Smeering; x; f(x)", nBins, xmin, xmax);
+    TH1D h_theory("h_theory", "Incertezza da Bin-Smeering; x; f(x)", nBins_, xmin_, xmax_);
     for (int i = 1; i <= nBins; ++i)
         h_theory.SetBinContent(i, f_norm.Eval(h_theory.GetBinCenter(i)));
     
@@ -173,10 +173,10 @@ void binsUncertainty () const {
     TRandom3 rnd(0);
 
     // Salva le somme per calcolare media e sigma per ogni bin
-    std::vector<double> sum(nBins, 0.0), sum2(nBins, 0.0);
+    std::vector<double> sum(nBins_, 0.0), sum2(nBins_, 0.0);
 
     for (int t = 0; t < nTrials; ++t) {
-        for (int i = 1; i <= nBins; ++i) {
+        for (int i = 1; i <= nBins_; ++i) {
             double y = h_theory.GetBinContent(i);
             // Fluttuazione gaussiana (±10% tipico)
             double y_fluct = rnd.Gaus(y, 0.1 * y);
