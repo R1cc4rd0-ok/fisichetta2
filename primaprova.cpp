@@ -50,15 +50,15 @@ public:
     } */
 
     TGraph* drawRandomGeneration (int N) {
-        std::vector<double> x, y;
+        std::vector<double> vx, vy;
 
         for (auto i = 0; i <= N; ++i) {
             double x = gRandom -> Uniform(0., 0.6);
-            double upperBound = f_cos->Eval(x);
+            double upperBound = f_root->Eval(x);
             double y = gRandom -> Uniform(0., 1.2);
             if (y <= upperBound) {
-                x.push_back(x);
-                y.push_back(y);
+                vx.push_back(x);
+                vy.push_back(y);
             }
         }
         TGraph* graph = new TGraph(x.size(), &x[0], &y[0]);
@@ -68,7 +68,7 @@ public:
     // Generazione di eventi secondo la distribuzione normalizzata
     void generateEvents(int N) const {
     // Funzione di densità di probabilità (normalizzata)
-    TF1 *f_pdf = new TF1("f_pdf", [this](double *x, double *) { return this->f_norm(x[0]); },
+    TF1 *f_pdf = new TF1("f_pdf", [this](double *x, double *) { return this->f(x[0]); },
                          xmin_, xmax_, 0);
     
     // Istogramma per gli eventi generati
