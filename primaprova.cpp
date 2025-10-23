@@ -26,20 +26,19 @@ public:
     double f(double x) const {
         return std::cos(k_ * x + phi_) * std::cos(k_ * x + phi_) + b_;
     }
-
+/*
     // Calcolo dell’integrale una sola volta
      double getIntegral() const {
         TF1 f_int("f_int", [this](double *x, double *) { return this->f(x[0]); },
                   xmin_, xmax_, 0);
         return f_int.Integral(xmin_, xmax_);
-    }
+    } */
 
     // Funzione normalizzata (PDF)
     double f_norm(double x) const {
-        if (getIntegral() == 0) {
-            throw std::runtime_error("Integral not computed yet!");
-        }
-        return f(x) / getIntegral();
+        TF1 f_int("f_int", [this](double *x, double *) { return this->f(x[0]); },
+                  xmin_, xmax_, 0);
+        return f(x) / f_int->Integral(xmin_, xmax_);
     }
 
     // Disegno della funzione normalizzata
