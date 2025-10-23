@@ -16,41 +16,24 @@ private:
     double k_;
     double phi_;
     double b_;
-    double xmin_;
-    double xmax_;
-    int nBins_;
 
 public:
-    Simulation(double k, double phi, double b, double xmin, double xmax, int nBins)
-        : k_(k), phi_(phi), b_(b), xmin_(xmin), xmax_(xmax), nBins_(nBins) {}
+    Simulation(double k, double phi, double b)
+        : k_(k), phi_(phi), b_(b) {}
 
     // Funzione teorica
     double f(double x) const {
         return std::cos(k_ * x + phi_) * std::cos(k_ * x + phi_) + b_;
     }
 
-    // Funzione normalizzata (PDF)
-    double f_norm(double x) const {
-        TF1 f_int("f_int", [this](double *x, double *) { return this->f(x[0]); },
-                  xmin_, xmax_, 0);
-        return f(x) / f_int.Integral(xmin_, xmax_);
-    }
+    // Funzione ROOT
+    TF1* f_root(double norm = 1.) {
+        TF1* cos = new TF1("Funzione coseno", "[3]*((cos([0]*x + [1]))^2 + [2])", 0., 0.6);
+        cos->SetParameters(k_, phi_, b_, norm);
+        return cos;
+  }
 
-    // Disegno della funzione normalizzata
-    void drawFunctionNorm() const {
-        TF1 *f = new TF1("f_norm", [this](double *x, double *) { return this->f_norm(x[0]); },
-                         xmin_, xmax_, 0);
-        f->SetTitle("f_{norm}(x) = cos^{2}(kx + #phi) + b (normalizzata); x; f(x)");
-        f->SetLineColor(kBlue + 1);
-        f->SetLineWidth(2);
-
-        TCanvas *c1 = new TCanvas("c1", "Funzione Normalizzata", 800, 600);
-        f->GetXaxis()->SetRangeUser(0.0, 5.0);
-        f->GetYaxis()->SetRangeUser(0.0, 1.5);
-        f->Draw();
-        c1->SaveAs("funzionenorm.png");
-    }
-
+    /*
     // Disegno della funzione non normalizzata
     void drawFunction() const {
         TF1 *f = new TF1("f", [this](double *x, double *) { return this->f(x[0]); },
@@ -60,10 +43,25 @@ public:
         f->SetLineWidth(2);
 
         TCanvas *c1 = new TCanvas("c1", "Funzione", 1200, 600);
-        f->GetXaxis()->SetRangeUser(0.0, 5.0);
+        f->GetXaxis()->SetRangeUser(0.0, 0.6);
         f->GetYaxis()->SetRangeUser(0.0, 1.5);
         f->Draw();
         c1->SaveAs("funzione.png");
+    } */
+
+    TGraph* drawRandomGeneration (int N) {
+        std::vector<double> x, y;
+
+        for (auto x = 0; i <= N; ++i) {
+            double x = gRandom -> Uniform(0., 0.6);
+            double upperBound = f_cos->Eval(x);
+            double y = gRandom -> Uniform(0., 1.2);
+            if (y <= upperBound) {
+                x.push_back(x);
+                y.push_back(y);
+        }
+        TGraph* graph = new TGraph(x.size(), &x[0], &y[0]);
+        return graph;
     }
 
     // Generazione di eventi secondo la distribuzione normalizzata
