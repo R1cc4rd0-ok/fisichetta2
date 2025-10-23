@@ -20,22 +20,29 @@ private:
 
 public:
     Simulation(double k, double phi, double b, double xmin, double xmax, int nBins)
-        : k_(k), phi_(phi), b_(b), xmin_(xmin), xmax_(xmax), nBins_(nBins) 
-    {
-        // Calcolo dell’integrale una sola volta
-        TF1 f_int("f_int", [this](double *x, double *) { return this->f(x[0]); },
-                  xmin_, xmax_, 0);
-        integral_ = f_int.Integral(xmin_, xmax_);
-    }
+        : k_(k), phi_(phi), b_(b), xmin_(xmin), xmax_(xmax), nBins_(nBins) {}
 
     // Funzione teorica
     double f(double x) const {
         return std::cos(k_ * x + phi_) * std::cos(k_ * x + phi_) + b_;
     }
 
+    // Calcolo dell’integrale una sola volta
+     void computeIntegral() {
+        TF1 f_int("f_int", [this](double *x, double *) { return this->f(x[0]); },
+                  xmin_, xmax_, 0);
+        integral_ = f_int.Integral(xmin_, xmax_);
+    }
+
+    // Restituisce l'integrale
+    double getIntegral() const { return integral_; }
+
     // Funzione normalizzata (PDF)
     double f_norm(double x) const {
-        return f(x) / integral_;
+        if (integral_ == 0) {
+            throw std::runtime_error("Integral not computed yet!");
+        }
+        return f(x) / getIntegral();
     }
 
     // Disegno della funzione normalizzata
@@ -47,8 +54,8 @@ public:
         f->SetLineWidth(2);
 
         TCanvas *c1 = new TCanvas("c1", "Funzione Normalizzata", 800, 600);
-        f->GetXaxis()->SetRangeUser(0.0, 4.5);
-        f->GetYaxis()->SetRangeUser(0.0, 1.2);
+        f->GetXaxis()->SetRangeUser(0.0, 5.0);
+        f->GetYaxis()->SetRangeUser(0.0, 1.5);
         f->Draw();
         c1->SaveAs("funzione.png");
     }
