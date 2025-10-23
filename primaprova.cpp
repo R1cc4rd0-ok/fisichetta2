@@ -52,13 +52,14 @@ public:
     TGraph* drawRandomGeneration (int N) {
         std::vector<double> x, y;
 
-        for (auto x = 0; i <= N; ++i) {
+        for (auto i = 0; i <= N; ++i) {
             double x = gRandom -> Uniform(0., 0.6);
             double upperBound = f_cos->Eval(x);
             double y = gRandom -> Uniform(0., 1.2);
             if (y <= upperBound) {
                 x.push_back(x);
                 y.push_back(y);
+            }
         }
         TGraph* graph = new TGraph(x.size(), &x[0], &y[0]);
         return graph;
@@ -236,7 +237,7 @@ int main() {
 
     Simulation sim(k, phi, b, 0, 2 * M_PI, 100);
 
-    sim.drawFunction();   // Punto 1
+    sim.drawRandomGeneration();   // Punto 1
     sim.drawFunctionNorm();
     sim.generateEvents(10000); // Punto 2
     // sim.studyRegenerationUncertainty(10000, 50, 200);
