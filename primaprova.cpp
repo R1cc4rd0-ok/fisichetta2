@@ -111,6 +111,7 @@ public:
     c2->SaveAs("distribuzione_generata.png");
 }
 
+/*
 void studyRegenerationUncertainty(int N = 10000, int B = 50, int nRepeat = 100) const {
     std::cout << "\n>>> [3.2] Studio dell'incertezza da rigenerazione <<<" << std::endl;
     std::cout << "N eventi = " << N << ", bin = " << B << ", ripetizioni = " << nRepeat << std::endl;
@@ -155,11 +156,12 @@ void studyRegenerationUncertainty(int N = 10000, int B = 50, int nRepeat = 100) 
     c4->SaveAs("uncertainty_regeneration.png");
 
     std::cout << "→ Salvato grafico: uncertainty_regeneration.png\n" << std::endl;
-}
+} */
 
 
 // RICCARDO METTI QUA IL TUO CODICE
 
+void binsUncertainty () const {
 // Numero di rigenerazioni per stimare incertezza
     int nTrials = 500;
     TRandom3 rnd(0);
@@ -197,6 +199,7 @@ void studyRegenerationUncertainty(int N = 10000, int B = 50, int nRepeat = 100) 
 
     std::cout << "Salvato grafico: bin_smeering.png" << std::endl;
     return 0;
+}
 
 // FINE A QUA RICCARDO
 
@@ -214,7 +217,8 @@ int main() {
     sim.drawFunction();   // Punto 1
     sim.drawFunctionNorm();
     sim.generateEvents(10000); // Punto 2
-    sim.studyRegenerationUncertainty(10000, 50, 200);
+    // sim.studyRegenerationUncertainty(10000, 50, 200);
+    sim.binsUncertainty();
 
     return 0;
 }
