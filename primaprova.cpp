@@ -163,6 +163,10 @@ void studyRegenerationUncertainty(int N = 10000, int B = 50, int nRepeat = 100) 
 
 void binsUncertainty () const {
 
+    TF1 f_norm("f_norm", [=](double *x, double *) {
+        return (std::cos(k*x[0] + phi)*std::cos(k*x[0] + phi) + b) / norm;
+    }, xmin, xmax, 0);
+
     // Istogramma teorico
     TH1D h_theory("h_theory", "Incertezza da Bin-Smeering; x; f(x)", nBins_, xmin_, xmax_);
     for (int i = 1; i <= nBins_; ++i)
