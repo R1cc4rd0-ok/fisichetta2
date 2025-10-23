@@ -26,13 +26,6 @@ public:
     double f(double x) const {
         return std::cos(k_ * x + phi_) * std::cos(k_ * x + phi_) + b_;
     }
-/*
-    // Calcolo dell’integrale una sola volta
-     double getIntegral() const {
-        TF1 f_int("f_int", [this](double *x, double *) { return this->f(x[0]); },
-                  xmin_, xmax_, 0);
-        return f_int.Integral(xmin_, xmax_);
-    } */
 
     // Funzione normalizzata (PDF)
     double f_norm(double x) const {
@@ -70,8 +63,6 @@ public:
         f->Draw();
         c1->SaveAs("funzione.png");
     }
-
-
 
     // Generazione di eventi secondo la distribuzione normalizzata
     void generateEvents(int N) const {
@@ -163,6 +154,13 @@ void studyRegenerationUncertainty(int N = 10000, int B = 50, int nRepeat = 100) 
 
     std::cout << "→ Salvato grafico: uncertainty_regeneration.png\n" << std::endl;
 }
+
+
+// RICCARDO METTI QUA IL TUO CODICE
+
+
+
+// FINE A QUA RICCARDO
 
     
 };
