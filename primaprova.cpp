@@ -165,7 +165,7 @@ void binsUncertainty () const {
 
     // Istogramma teorico
     TH1D h_theory("h_theory", "Incertezza da Bin-Smeering; x; f(x)", nBins_, xmin_, xmax_);
-    for (int i = 1; i <= nBins; ++i)
+    for (int i = 1; i <= nBins_; ++i)
         h_theory.SetBinContent(i, f_norm.Eval(h_theory.GetBinCenter(i)));
     
 // Numero di rigenerazioni per stimare incertezza
@@ -186,7 +186,7 @@ void binsUncertainty () const {
     }
 
     // Calcolo media e sigma per ogni bin
-    TGraphErrors *g_unc = new TGraphErrors(nBins);
+    TGraphErrors *g_unc = new TGraphErrors(nBins_);
     for (int i = 1; i <= nBins_; ++i) {
         double mean = sum[i-1] / nTrials;
         double sigma = std::sqrt(sum2[i-1]/nTrials - mean*mean);
