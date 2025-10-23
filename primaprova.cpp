@@ -88,7 +88,7 @@ public:
     }, xmin_, xmax_, 0);
 
     // Impostazioni grafiche
-    TCanvas *c2 = new TCanvas("c2", "Distribuzione Generata", 800, 600);
+    TCanvas *c2 = new TCanvas("c2", "Distribuzione Generata", 1200, 600);
     gStyle->SetOptStat(0);
 
     h->SetLineColor(kBlue + 1);
