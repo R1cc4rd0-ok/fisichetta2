@@ -2,12 +2,14 @@
 
 #include <iostream>
 #include <cmath>
+#include <vector>
 #include "TCanvas.h"
 #include "TF1.h"
 #include "TRandom3.h"
 #include "TH1D.h"
 #include "TStyle.h"
 #include "TLegend.h"
+#include "TGraphErrors.h"
 
 class Simulation {
 private:
@@ -158,7 +160,43 @@ void studyRegenerationUncertainty(int N = 10000, int B = 50, int nRepeat = 100) 
 
 // RICCARDO METTI QUA IL TUO CODICE
 
+// Numero di rigenerazioni per stimare incertezza
+    int nTrials = 500;
+    TRandom3 rnd(0);
 
+    // Salva le somme per calcolare media e sigma per ogni bin
+    std::vector<double> sum(nBins, 0.0), sum2(nBins, 0.0);
+
+    for (int t = 0; t < nTrials; ++t) {
+        for (int i = 1; i <= nBins; ++i) {
+            double y = h_theory.GetBinContent(i);
+            // Fluttuazione gaussiana (±10% tipico)
+            double y_fluct = rnd.Gaus(y, 0.1 * y);
+            sum[i-1]  += y_fluct;
+            sum2[i-1] += y_fluct * y_fluct;
+        }
+    }
+
+    // Calcolo media e sigma per ogni bin
+    TGraphErrors *g_unc = new TGraphErrors(nBins);
+    for (int i = 1; i <= nBins; ++i) {
+        double mean = sum[i-1] / nTrials;
+        double sigma = std::sqrt(sum2[i-1]/nTrials - mean*mean);
+        double x = h_theory.GetBinCenter(i);
+        g_unc->SetPoint(i-1, x, mean);
+        g_unc->SetPointError(i-1, 0, sigma);
+    }
+
+    // Disegno
+    TCanvas *c = new TCanvas("c", "Bin-smeering", 900, 600);
+    h_theory.SetLineColor(kBlue + 1);
+    h_theory.Draw("HIST");
+    g_unc->SetFillColorAlpha(kRed, 0.3);
+    g_unc->Draw("E3 SAME");
+    c->SaveAs("bin_smeering.png");
+
+    std::cout << "Salvato grafico: bin_smeering.png" << std::endl;
+    return 0;
 
 // FINE A QUA RICCARDO
 
