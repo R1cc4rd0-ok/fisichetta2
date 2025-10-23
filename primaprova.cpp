@@ -242,7 +242,7 @@ int main() {
     sim.drawFunctionNorm();
     sim.generateEvents(10000); // Punto 2
     // sim.studyRegenerationUncertainty(10000, 50, 200);
-    sim.binsUncertainty();
+    // sim.binsUncertainty();
     sim.parameterUncertainty(500);
 
     return 0;
