@@ -65,7 +65,7 @@ public:
         f->SetLineColor(kBlue + 1);
         f->SetLineWidth(2);
 
-        TCanvas *c1 = new TCanvas("c1", "Funzione", 800, 600);
+        TCanvas *c1 = new TCanvas("c1", "Funzione", 1200, 600);
         f->GetXaxis()->SetRangeUser(0.0, 5.0);
         f->GetYaxis()->SetRangeUser(0.0, 1.5);
         f->Draw();
