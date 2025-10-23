@@ -166,7 +166,7 @@ void binsUncertainty () const {
     // Istogramma teorico
     TH1D h_theory("h_theory", "Incertezza da Bin-Smeering; x; f(x)", nBins_, xmin_, xmax_);
     for (int i = 1; i <= nBins_; ++i)
-        h_theory.SetBinContent(i, f_norm.Eval(h_theory.GetBinCenter(i)));
+        h_theory.SetBinContent(i, f_norm().Eval(h_theory.GetBinCenter(i)));
     
 // Numero di rigenerazioni per stimare incertezza
     int nTrials = 500;
