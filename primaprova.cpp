@@ -43,7 +43,7 @@ public:
     }
 
     // Disegno della funzione normalizzata
-    void drawFunction() const {
+    void drawFunctionNorm() const {
         TF1 *f = new TF1("f_norm", [this](double *x, double *) { return this->f_norm(x[0]); },
                          xmin_, xmax_, 0);
         f->SetTitle("f_{norm}(x) = cos^{2}(kx + #phi) + b (normalizzata); x; f(x)");
@@ -54,8 +54,25 @@ public:
         f->GetXaxis()->SetRangeUser(0.0, 5.0);
         f->GetYaxis()->SetRangeUser(0.0, 1.5);
         f->Draw();
+        c1->SaveAs("funzionenorm.png");
+    }
+
+    // Disegno della funzione non normalizzata
+    void drawFunction() const {
+        TF1 *f = new TF1("f", [this](double *x, double *) { return this->f(x[0]); },
+                         xmin_, xmax_, 0);
+        f->SetTitle("f(x) = cos^{2}(kx + #phi) + b; x; f(x)");
+        f->SetLineColor(kBlue + 1);
+        f->SetLineWidth(2);
+
+        TCanvas *c1 = new TCanvas("c1", "Funzione", 800, 600);
+        f->GetXaxis()->SetRangeUser(0.0, 5.0);
+        f->GetYaxis()->SetRangeUser(0.0, 1.5);
+        f->Draw();
         c1->SaveAs("funzione.png");
     }
+
+
 
     // Generazione di eventi secondo la distribuzione normalizzata
     void generateEvents(int N) const {
@@ -160,6 +177,7 @@ int main() {
     Simulation sim(k, phi, b, 0, 2 * M_PI, 100);
 
     sim.drawFunction();   // Punto 1
+    sim.drawFunctionNorm();
     sim.generateEvents(10000); // Punto 2
     sim.studyRegenerationUncertainty(10000, 50, 200);
 
