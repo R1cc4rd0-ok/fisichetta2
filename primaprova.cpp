@@ -208,6 +208,76 @@ void binsUncertainty () const {
 
 // FINE A QUA RICCARDO
 
+void parameterUncertainty(int nTrials = 500) const {
+    TRandom3 rnd(0);
+
+    // Definisci griglia di x
+    int nPoints = 200;
+    std::vector<double> xvals(nPoints);
+    std::vector<double> mean(nPoints, 0.0);
+    std::vector<double> sum2(nPoints, 0.0);
+
+    double step = (xmax_ - xmin_) / (nPoints - 1);
+    for (int i = 0; i < nPoints; ++i)
+        xvals[i] = xmin_ + i * step;
+
+    // Sigma relativi
+    double sigma_k   = 0.02 * k_;   // ±2%
+    double sigma_phi = 0.05 * phi_; // ±5%
+    double sigma_b   = 0.01 * b_;   // ±1%
+
+    // Loop su nTrials con variazione parametri
+    for (int t = 0; t < nTrials; ++t) {
+        double k_rand   = rnd.Gaus(k_, sigma_k);
+        double phi_rand = rnd.Gaus(phi_, sigma_phi);
+        double b_rand   = rnd.Gaus(b_, sigma_b);
+
+        for (int i = 0; i < nPoints; ++i) {
+            double fx = std::cos(k_rand * xvals[i] + phi_rand);
+            fx = fx * fx + b_rand;
+            mean[i]  += fx;
+            sum2[i]  += fx * fx;
+        }
+    }
+
+    // Calcolo media e sigma per ogni x
+    for (int i = 0; i < nPoints; ++i)
+        mean[i] /= nTrials;
+
+    TGraphErrors *g_unc = new TGraphErrors(nPoints);
+    for (int i = 0; i < nPoints; ++i) {
+        double sigma = std::sqrt(sum2[i]/nTrials - mean[i]*mean[i]);
+        g_unc->SetPoint(i, xvals[i], mean[i]);
+        g_unc->SetPointError(i, 0, sigma);
+    }
+
+    // Funzione teorica centrale
+    TF1 *f_central = new TF1("f_central", [this](double *x, double *) { return this->f(x[0]); },
+                              xmin_, xmax_, 0);
+
+    // Disegno grafico
+    TCanvas *c = new TCanvas("c_param", "Incertezza sui parametri", 900, 600);
+    gStyle->SetOptStat(0);
+
+    f_central->SetLineColor(kBlue + 2);
+    f_central->SetLineWidth(2);
+    f_central->SetTitle("Propagazione incertezze sui parametri; x; f(x)");
+    f_central->Draw();
+
+    g_unc->SetFillColorAlpha(kRed, 0.3);
+    g_unc->Draw("E3 SAME");
+
+    // Legenda
+    TLegend *leg = new TLegend(0.6, 0.75, 0.88, 0.88);
+    leg->AddEntry(f_central, "Funzione nominale", "l");
+    leg->AddEntry(g_unc, "Banda d'incertezza", "f");
+    leg->Draw();
+
+    c->SaveAs("param_uncertainty.png");
+
+    std::cout << "Salvato grafico: param_uncertainty.png" << std::endl;
+}
+
     
 };
 
@@ -224,6 +294,7 @@ int main() {
     sim.generateEvents(10000); // Punto 2
     // sim.studyRegenerationUncertainty(10000, 50, 200);
     sim.binsUncertainty();
+    sim.parameterUncertainty(500);
 
     return 0;
 }
