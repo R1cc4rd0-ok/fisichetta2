@@ -1,234 +1,238 @@
-// Per compilare: g++ primaprova.cpp `root-config --cflags --libs` -O2 -o primaprova
+// Compilazione:
+// g++ primaprova.cpp `root-config --cflags --libs` -O2 -o primaprova
 
-#include <iostream>
 #include <cmath>
+#include <iostream>
 #include <vector>
+
 #include "TCanvas.h"
 #include "TF1.h"
-#include "TRandom3.h"
-#include "TH1D.h"
-#include "TStyle.h"
-#include "TLegend.h"
 #include "TGraphErrors.h"
+#include "TH1D.h"
+#include "TLegend.h"
+#include "TRandom3.h"
+#include "TStyle.h"
 
 class Simulation {
-private:
-    double k_;
-    double phi_;
-    double b_;
+ private:
+  double k_;
+  double phi_;
+  double b_;
+  double xmin_;
+  double xmax_;
+  int nBins_;
 
-public:
-    Simulation(double k, double phi, double b)
-        : k_(k), phi_(phi), b_(b) {}
+ public:
+  Simulation(double k, double phi, double b, double xmin, double xmax,
+             int nBins)
+      : k_(k), phi_(phi), b_(b), xmin_(xmin), xmax_(xmax), nBins_(nBins) {}
 
-    // Funzione teorica
-    double f(double x) const {
-        return std::cos(k_ * x + phi_) * std::cos(k_ * x + phi_) + b_;
-    }
-
-    // Funzione ROOT
-    TF1* f_root(double norm = 1.) {
-        TF1* cos = new TF1("Funzione coseno", "[3]*((cos([0]*x + [1]))^2 + [2])", 0., 0.6);
-        cos->SetParameters(k_, phi_, b_, norm);
-        return cos;
+  // Funzione teorica
+  double f(double x) const {
+    return std::cos(k_ * x + phi_) * std::cos(k_ * x + phi_) + b_;
   }
 
-    // 1.1 Disegna la funzione
-    TGraph* drawRandomGeneration (int N) {
-        std::vector<double> vx, vy;
+  // Funzione normalizzata (approssimazione numerica semplice)
+  double f_norm(double x) const {
+    double integral = 0.6 * (1.0 + b_);  // stima dell’integrale media
+    return f(x) / integral;
+  }
 
-        for (auto i = 0; i <= N; ++i) {
-            double x = gRandom -> Uniform(0., 0.6);
-            double upperBound = f_root->Eval(x);
-            double y = gRandom -> Uniform(0., 1.2);
-            if (y <= upperBound) {
-                vx.push_back(x);
-                vy.push_back(y);
-            }
-        }
-        TGraph* graph = new TGraph(x.size(), &x[0], &y[0]);
-        return graph;
-    }
+  // 1.1 Disegna la funzione
+  TGraph *drawFunction(int N) {
+    std::vector<double> vx, vy;
 
-    // 1.2 Generazione di eventi secondo la distribuzione normalizzata
-    void generateEvents(int N) const {
-    // Funzione di densità di probabilità (normalizzata)
-    TF1 *f_pdf = new TF1("f_pdf", [this](double *x, double *) { return this->f(x[0]); },
-                         xmin_, xmax_, 0);
-    
-    // Istogramma per gli eventi generati
-    TH1D *h = new TH1D("h", "Eventi generati secondo f(x);x;Conteggi", nBins_, xmin_, xmax_);
-    TRandom3 rand(0);
+    double step = (xmax_ - xmin_) / (N - 1);
 
     for (int i = 0; i < N; ++i) {
-        double x = f_pdf->GetRandom(xmin_, xmax_);
-        h->Fill(x);
+      double x = xmin_ + i * step;
+      vx[i] = x;
+      vy[i] = f(x);
+    }
+    TGraph *graph = new TGraph(vx.size(), &vx[0], &vy[0]);
+    return graph;
+  }
+
+  // Genera eventi secondo f(x)
+  void generateEvents(int N) const {
+    TF1 *f_pdf = new TF1(
+        "f_pdf", [this](double *x, double *) { return this->f_norm(x[0]); },
+        xmin_, xmax_, 0);
+
+    TH1D *h = new TH1D("h", "Distribuzione generata; x; Conteggi", nBins_,
+                       xmin_, xmax_);
+    for (int i = 0; i < N; ++i) {
+      double x = f_pdf->GetRandom();
+      h->Fill(x);
     }
 
-    // Calcolo del fattore di scala per rendere comparabili le due curve
-    double scale = h->Integral() * h->GetBinWidth(1);  // area istogramma ~ N_eventi
+    // Normalizza l'istogramma all’area teorica
+    double scale = h->Integral() * h->GetBinWidth(1);
 
-    // Funzione teorica scalata
-    TF1 *f_scaled = new TF1("f_scaled", [this, scale](double *x, double *) {
-        return this->f_norm(x[0]) * scale;
-    }, xmin_, xmax_, 0);
+    TF1 *f_scaled = new TF1(
+        "f_scaled",
+        [this, scale](double *x, double *) {
+          return this->f_norm(x[0]) * scale;
+        },
+        xmin_, xmax_, 0);
 
-    // Impostazioni grafiche
-    TCanvas *c2 = new TCanvas("c2", "Distribuzione Generata", 1200, 600);
+    TCanvas *c = new TCanvas("c_gen", "Distribuzione generata", 900, 600);
     gStyle->SetOptStat(0);
 
-    h->SetLineColor(kBlue + 1);
-    h->SetFillColorAlpha(kAzure + 7, 0.4);
+    h->SetLineColor(kAzure + 7);
+    h->SetFillColorAlpha(kAzure - 4, 0.4);
     h->Draw("HIST");
 
     f_scaled->SetLineColor(kRed);
     f_scaled->SetLineWidth(3);
-    f_scaled->SetNpx(1000);  // maggiore risoluzione
     f_scaled->Draw("SAME");
 
-    // Legenda
     TLegend *leg = new TLegend(0.6, 0.7, 0.88, 0.88);
-    leg->AddEntry(h, "Distribuzione generata (MC)", "f");
-    leg->AddEntry(f_scaled, "Funzione teorica (scalata)", "l");
+    leg->AddEntry(h, "Distribuzione MC", "f");
+    leg->AddEntry(f_scaled, "Funzione teorica scalata", "l");
     leg->Draw();
 
-    c2->SaveAs("distribuzione_generata.png");
-}
+    c->SaveAs("distribuzione_generata.png");
+  }
 
-// 1.3.2
-void studyRegenerationUncertainty(int N = 10000, int B = 50, int nRepeat = 100) const {
-    std::cout << "\n>>> [3.2] Studio dell'incertezza da rigenerazione <<<" << std::endl;
-    std::cout << "N eventi = " << N << ", bin = " << B << ", ripetizioni = " << nRepeat << std::endl;
+  // Studio incertezza da rigenerazione
+  void studyRegenerationUncertainty(int N = 10000, int B = 50,
+                                    int nRepeat = 100) const {
+    std::cout << "\n>>> Studio dell'incertezza da rigenerazione <<<\n";
 
-    TF1 f_gen("f_gen", [this](double *x, double *) { return this->f_norm(x[0]); },
-              xmin_, xmax_, 0);
+    TF1 f_gen(
+        "f_gen", [this](double *x, double *) { return this->f_norm(x[0]); },
+        xmin_, xmax_, 0);
 
-    // Vettori per media e varianza per bin
     std::vector<double> sum(B, 0.0);
     std::vector<double> sum2(B, 0.0);
 
     for (int rep = 0; rep < nRepeat; ++rep) {
-        TH1D h(Form("h_%d", rep), "Rigenerazioni", B, xmin_, xmax_);
-        for (int i = 0; i < N; ++i) {
-            double x = f_gen.GetRandom();
-            h.Fill(x);
-        }
+      TH1D h(Form("h_%d", rep), "Rigenerazioni", B, xmin_, xmax_);
+      for (int i = 0; i < N; ++i) h.Fill(f_gen.GetRandom());
 
-        // Aggiorna somme e somme dei quadrati
-        for (int b = 1; b <= B; ++b) {
-            double val = h.GetBinContent(b);
-            sum[b - 1]  += val;
-            sum2[b - 1] += val * val;
-        }
+      for (int b = 1; b <= B; ++b) {
+        double val = h.GetBinContent(b);
+        sum[b - 1] += val;
+        sum2[b - 1] += val * val;
+      }
     }
 
-    // Calcola media e deviazione standard per bin
-    TH1D *h_sigma = new TH1D("h_sigma", "Incertezza da rigenerazione; x; #sigma(bin)", B, xmin_, xmax_);
+    TH1D *h_sigma =
+        new TH1D("h_sigma", "Incertezza da rigenerazione; x; #sigma(bin)", B,
+                 xmin_, xmax_);
     for (int b = 1; b <= B; ++b) {
-        double mean = sum[b - 1] / nRepeat;
-        double var  = (sum2[b - 1] / nRepeat) - mean * mean;
-        if (var < 0) var = 0;
-        double sigma = sqrt(var);
-        h_sigma->SetBinContent(b, sigma);
+      double mean = sum[b - 1] / nRepeat;
+      double var = (sum2[b - 1] / nRepeat) - mean * mean;
+      if (var < 0) var = 0;
+      h_sigma->SetBinContent(b, std::sqrt(var));
     }
 
-    // Disegno risultato
-    TCanvas *c4 = new TCanvas("c4", "Incertezza da rigenerazione", 900, 600);
-    h_sigma->SetLineColor(kRed + 1);
+    TCanvas *c = new TCanvas("c_reg", "Incertezza da rigenerazione", 900, 600);
     h_sigma->SetFillColorAlpha(kRed - 7, 0.4);
     h_sigma->Draw("HIST");
-    c4->SaveAs("uncertainty_regeneration.png");
+    c->SaveAs("uncertainty_regeneration.png");
+  }
 
-    std::cout << "→ Salvato grafico: uncertainty_regeneration.png\n" << std::endl;
-}
+  // Studio incertezza da Bin-smearing
+  void binSmearingUncertainty() const {
+    std::cout << "\n>>> Studio dell'incertezza da Bin-smearing <<<\n";
 
-void parameterUncertainty(int nTrials = 500) const {
+    TH1D *h_func =
+        new TH1D("h_func", "f(x) discreta; x; Conteggi", nBins_, xmin_, xmax_);
+    for (int b = 1; b <= nBins_; ++b) {
+      double x = h_func->GetBinCenter(b);
+      h_func->SetBinContent(b, f(x));
+    }
+
     TRandom3 rnd(0);
+    TH1D *h_sigma = (TH1D *)h_func->Clone("h_sigma");
+    h_sigma->Reset();
+    for (int b = 1; b <= nBins_; ++b) {
+      double val = h_func->GetBinContent(b);
+      double flutt = rnd.Gaus(val, std::sqrt(val + 1e-6));
+      h_sigma->SetBinContent(b, std::fabs(flutt - val));
+    }
 
-    // Definisci griglia di x
+    TCanvas *c = new TCanvas("c_smear", "Incertezza da bin-smearing", 900, 600);
+    h_sigma->SetLineColor(kGreen + 2);
+    h_sigma->SetFillColorAlpha(kGreen + 1, 0.4);
+    h_sigma->Draw("HIST");
+    c->SaveAs("uncertainty_binsmearing.png");
+  }
+
+  // Propagazione incertezze sui parametri
+  void parameterUncertainty(int nTrials = 500) const {
+    TRandom3 rnd(0);
     int nPoints = 200;
     std::vector<double> xvals(nPoints);
     std::vector<double> mean(nPoints, 0.0);
     std::vector<double> sum2(nPoints, 0.0);
-
     double step = (xmax_ - xmin_) / (nPoints - 1);
-    for (int i = 0; i < nPoints; ++i)
-        xvals[i] = xmin_ + i * step;
 
-    // Sigma relativi
-    double sigma_k   = 0.02 * k_;   // ±2%
-    double sigma_phi = 0.05 * phi_; // ±5%
-    double sigma_b   = 0.01 * b_;   // ±1%
+    for (int i = 0; i < nPoints; ++i) xvals[i] = xmin_ + i * step;
 
-    // Loop su nTrials con variazione parametri
+    double sigma_k = 0.02 * k_;
+    double sigma_phi = 0.05 * phi_;
+    double sigma_b = 0.01 * b_;
+
     for (int t = 0; t < nTrials; ++t) {
-        double k_rand   = rnd.Gaus(k_, sigma_k);
-        double phi_rand = rnd.Gaus(phi_, sigma_phi);
-        double b_rand   = rnd.Gaus(b_, sigma_b);
-
-        for (int i = 0; i < nPoints; ++i) {
-            double fx = std::cos(k_rand * xvals[i] + phi_rand);
-            fx = fx * fx + b_rand;
-            mean[i]  += fx;
-            sum2[i]  += fx * fx;
-        }
+      double k_rand = rnd.Gaus(k_, sigma_k);
+      double phi_rand = rnd.Gaus(phi_, sigma_phi);
+      double b_rand = rnd.Gaus(b_, sigma_b);
+      for (int i = 0; i < nPoints; ++i) {
+        double fx = std::cos(k_rand * xvals[i] + phi_rand);
+        fx = fx * fx + b_rand;
+        mean[i] += fx;
+        sum2[i] += fx * fx;
+      }
     }
 
-    // Calcolo media e sigma per ogni x
-    for (int i = 0; i < nPoints; ++i)
-        mean[i] /= nTrials;
+    for (int i = 0; i < nPoints; ++i) mean[i] /= nTrials;
 
     TGraphErrors *g_unc = new TGraphErrors(nPoints);
     for (int i = 0; i < nPoints; ++i) {
-        double sigma = std::sqrt(sum2[i]/nTrials - mean[i]*mean[i]);
-        g_unc->SetPoint(i, xvals[i], mean[i]);
-        g_unc->SetPointError(i, 0, sigma);
+      double sigma = std::sqrt(sum2[i] / nTrials - mean[i] * mean[i]);
+      g_unc->SetPoint(i, xvals[i], mean[i]);
+      g_unc->SetPointError(i, 0, sigma);
     }
 
-    // Funzione teorica centrale
-    TF1 *f_central = new TF1("f_central", [this](double *x, double *) { return this->f(x[0]); },
-                              xmin_, xmax_, 0);
+    TF1 *f_central = new TF1(
+        "f_central", [this](double *x, double *) { return this->f(x[0]); },
+        xmin_, xmax_, 0);
 
-    // Disegno grafico
-    TCanvas *c = new TCanvas("c_param", "Incertezza sui parametri", 900, 600);
-    gStyle->SetOptStat(0);
-
+    TCanvas *c =
+        new TCanvas("c_param", "Propagazione incertezze parametri", 900, 600);
     f_central->SetLineColor(kBlue + 2);
     f_central->SetLineWidth(2);
-    f_central->SetTitle("Propagazione incertezze sui parametri; x; f(x)");
+    f_central->SetTitle("Propagazione incertezze parametri; x; f(x)");
     f_central->Draw();
 
     g_unc->SetFillColorAlpha(kRed, 0.3);
     g_unc->Draw("E3 SAME");
 
-    // Legenda
     TLegend *leg = new TLegend(0.6, 0.75, 0.88, 0.88);
     leg->AddEntry(f_central, "Funzione nominale", "l");
     leg->AddEntry(g_unc, "Banda d'incertezza", "f");
     leg->Draw();
 
     c->SaveAs("param_uncertainty.png");
-
-    std::cout << "Salvato grafico: param_uncertainty.png" << std::endl;
-}
-
-    
+  }
 };
 
-
+// === MAIN ===
 int main() {
-    double k = 5.2;
-    double phi = 1.8;
-    double b = 0.2;
+  double k = 5.2;
+  double phi = 1.8;
+  double b = 0.2;
 
-    Simulation sim(k, phi, b, 0, 2 * M_PI, 100);
+  Simulation sim(k, phi, b, 0.0, 0.6, 100);
 
-    sim.drawRandomGeneration();   // Punto 1
-    sim.drawFunctionNorm();
-    sim.generateEvents(10000); // Punto 2
-    // sim.studyRegenerationUncertainty(10000, 50, 200);
-    // sim.binsUncertainty();
-    sim.parameterUncertainty(500);
+  sim.drawFunction(1000);
+  sim.generateEvents(10000);
+  sim.studyRegenerationUncertainty(10000, 50, 200);
+  sim.binSmearingUncertainty();
+  sim.parameterUncertainty(500);
 
-    return 0;
+  return 0;
 }
