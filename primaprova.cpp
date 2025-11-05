@@ -97,6 +97,42 @@ class Simulation {
     c->SaveAs("distribuzione_generata.png");
   }
 
+void studyAgreementNB(const std::vector<int>& N_values,
+                      const std::vector<int>& B_values) const {
+    std::cout << "\n>>> [Studio dell’accordo al variare di N e B] <<<" << std::endl;
+
+    TF1 f_theory("f_theory", [this](double *x, double *) { return this->f(x[0]); },
+                 xmin_, xmax_, 0);
+    f_theory.SetNpx(1000);
+
+    for (int N : N_values) {
+        for (int B : B_values) {
+            TH1D h(Form("h_%d_%d", N, B),
+                   Form("Accordo con N=%d, B=%d; x; Conteggi", N, B),
+                   B, xmin_, xmax_);
+
+            // Generazione eventi
+            TRandom3 rnd(0);
+            for (int i = 0; i < N; ++i)
+                h.Fill(f_theory.GetRandom());
+
+            // Calcolo chi^2 rispetto alla funzione teorica
+            double chi2 = 0;
+            for (int i = 1; i <= B; ++i) {
+                double x = h.GetBinCenter(i);
+                double y_data = h.GetBinContent(i);
+                double y_theo = f_theory.Eval(x) * h.GetBinWidth(1) * N;
+                double err = std::sqrt(std::max(y_data, 1.0));
+                chi2 += std::pow((y_data - y_theo) / err, 2);
+            }
+
+            double chi2ndf = chi2 / B;
+            std::cout << "N=" << N << ", B=" << B << " → χ²/ndf = " << chi2ndf << std::endl;
+        }
+    }
+    std::cout << "----------------------------------------\n";
+}
+
   // Studio incertezza da rigenerazione
   void studyRegenerationUncertainty(int N = 10000, int B = 50,
                                     int nRepeat = 100) const {
