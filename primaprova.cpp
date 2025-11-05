@@ -33,22 +33,7 @@ public:
         return cos;
   }
 
-    /*
-    // Disegno della funzione non normalizzata
-    void drawFunction() const {
-        TF1 *f = new TF1("f", [this](double *x, double *) { return this->f(x[0]); },
-                         xmin_, xmax_, 0);
-        f->SetTitle("f(x) = cos^{2}(kx + #phi) + b; x; f(x)");
-        f->SetLineColor(kBlue + 1);
-        f->SetLineWidth(2);
-
-        TCanvas *c1 = new TCanvas("c1", "Funzione", 1200, 600);
-        f->GetXaxis()->SetRangeUser(0.0, 0.6);
-        f->GetYaxis()->SetRangeUser(0.0, 1.5);
-        f->Draw();
-        c1->SaveAs("funzione.png");
-    } */
-
+    // 1.1 Disegna la funzione
     TGraph* drawRandomGeneration (int N) {
         std::vector<double> vx, vy;
 
@@ -65,7 +50,7 @@ public:
         return graph;
     }
 
-    // Generazione di eventi secondo la distribuzione normalizzata
+    // 1.2 Generazione di eventi secondo la distribuzione normalizzata
     void generateEvents(int N) const {
     // Funzione di densità di probabilità (normalizzata)
     TF1 *f_pdf = new TF1("f_pdf", [this](double *x, double *) { return this->f(x[0]); },
@@ -110,6 +95,7 @@ public:
     c2->SaveAs("distribuzione_generata.png");
 }
 
+// 1.3.2
 void studyRegenerationUncertainty(int N = 10000, int B = 50, int nRepeat = 100) const {
     std::cout << "\n>>> [3.2] Studio dell'incertezza da rigenerazione <<<" << std::endl;
     std::cout << "N eventi = " << N << ", bin = " << B << ", ripetizioni = " << nRepeat << std::endl;
