@@ -40,14 +40,16 @@ class Simulation {
 
   // 1.1 Disegna la funzione
   TGraph *drawFunction(int N) {
-    std::vector<double> vx, vy;
+    std::vector<double> vx;
+    std::vector<double> vy;
 
     double step = (xmax_ - xmin_) / (N - 1);
 
     for (int i = 0; i < N; ++i) {
       double x = xmin_ + i * step;
-      vx[i] = x;
-      vy[i] = f(x);
+      double y = f(x);
+      vx.push_back(x);
+      vy.push_back(y);
     }
     TGraph *graph = new TGraph(vx.size(), &vx[0], &vy[0]);
     return graph;
