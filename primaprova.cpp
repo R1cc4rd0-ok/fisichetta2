@@ -27,75 +27,84 @@ class Simulation {
              int nBins)
       : k_(k), phi_(phi), b_(b), xmin_(xmin), xmax_(xmax), nBins_(nBins) {}
 
-  // Funzione teorica
+// Funzione teorica
   double f(double x) const {
     return std::cos(k_ * x + phi_) * std::cos(k_ * x + phi_) + b_;
   }
 
-  // Funzione normalizzata (approssimazione numerica semplice)
-  double f_norm(double x) const {
-    double integral = 0.6 * (1.0 + b_);  // stima dell’integrale media
-    return f(x) / integral;
-  }
+  // Funzione ROOT per disegno
+  TF1* f_cos(double norm = 1.) const {
+    TF1* f_cos = new TF1("Funzione coseno", "[3]*((cos([0]*x + [1]))^2 + [2])", xmin_, xmax_);
+    f_cos->SetParameters(k_, phi_, b_, norm);
+    return f_cos;
+}
 
-  // 1.1 Disegna la funzione
-  TGraph *drawFunction(int N) {
+// Prima prova 1. Disegna la funzione teorica f_cos
+void drawFunctionTheory(double norm = 1.) const {
+    TF1* f = f_cos(norm);
+
+    // Impostazioni grafiche
+    f->SetLineColor(kBlue + 2);
+    f->SetLineWidth(3);
+    f->SetNpx(1000);
+    f->SetTitle("Funzione teorica f(x) = cos^{2}(k x + #phi) + b; x; f(x)");
+
+    TCanvas* c = new TCanvas("c_fun_only", "Funzione teorica", 900, 600);
+    gStyle->SetOptStat(0);
+    f->Draw();
+
+    c->SaveAs("funzione_teorica.png");
+}
+
+  // Prima prova 2. Genera eventi secondo f(x) (hit or miss)
+  TGraph* generateEvents(int n) {
     std::vector<double> vx;
     std::vector<double> vy;
-
-    double step = (xmax_ - xmin_) / (N - 1);
-
-    for (int i = 0; i < N; ++i) {
-      double x = xmin_ + i * step;
-      double y = f(x);
-      vx.push_back(x);
-      vy.push_back(y);
+    
+    for (int i{0}; i < n; ++i) {
+      double x = gRandom->Uniform(0., 0.6);
+      double upper_bound = f_cos()->Eval(x);
+      double y = gRandom->Uniform(0., 1.2);
+      if (y <= upper_bound) {
+        vx.push_back(x);
+        vy.push_back(y);
+      }
     }
-    TGraph *graph = new TGraph(vx.size(), &vx[0], &vy[0]);
-    return graph;
+
+    return new TGraph(vx.size(), &vx[0], &vy[0]);
   }
 
-  // Genera eventi secondo f(x)
-  void generateEvents(int N) const {
-    TF1 *f_pdf = new TF1(
-        "f_pdf", [this](double *x, double *) { return this->f_norm(x[0]); },
-        xmin_, xmax_, 0);
+  // Prima prova 3. Disegna insieme la funzione teorica e i punti generati casualmente
+void drawFunctionAndGenerated(int nEvents = 10000, double norm = 1.) {
+    // Ottieni la funzione teorica
+    TF1* f = f_cos(norm);
+    f->SetLineColor(kRed);
+    f->SetLineWidth(3);
+    f->SetNpx(1000);
 
-    TH1D *h = new TH1D("h", "Distribuzione generata; x; Conteggi", nBins_,
-                       xmin_, xmax_);
-    for (int i = 0; i < N; ++i) {
-      double x = f_pdf->GetRandom();
-      h->Fill(x);
-    }
+    // Genera punti Monte Carlo
+    TGraph* g = generateEvents(nEvents);
+    g->SetMarkerStyle(20);
+    g->SetMarkerSize(0.5);
+    g->SetMarkerColor(kAzure + 2);
 
-    // Normalizza l'istogramma all’area teorica
-    double scale = h->Integral() * h->GetBinWidth(1);
-
-    TF1 *f_scaled = new TF1(
-        "f_scaled",
-        [this, scale](double *x, double *) {
-          return this->f_norm(x[0]) * scale;
-        },
-        xmin_, xmax_, 0);
-
-    TCanvas *c = new TCanvas("c_gen", "Distribuzione generata", 900, 600);
+    // Canvas
+    TCanvas* c = new TCanvas("c_fun_vs_mc", "Funzione vs Generazione", 900, 600);
     gStyle->SetOptStat(0);
 
-    h->SetLineColor(kAzure + 7);
-    h->SetFillColorAlpha(kAzure - 4, 0.4);
-    h->Draw("HIST");
+    // Disegno
+    g->SetTitle("Confronto: Funzione teorica vs Generazione casuale; x; y");
+    g->Draw("AP");  // A = assi, P = punti
+    f->Draw("SAME"); // sovrappone la curva teorica
 
-    f_scaled->SetLineColor(kRed);
-    f_scaled->SetLineWidth(3);
-    f_scaled->Draw("SAME");
-
-    TLegend *leg = new TLegend(0.6, 0.7, 0.88, 0.88);
-    leg->AddEntry(h, "Distribuzione MC", "f");
-    leg->AddEntry(f_scaled, "Funzione teorica scalata", "l");
+    // Legenda
+    TLegend* leg = new TLegend(0.6, 0.75, 0.88, 0.88);
+    leg->AddEntry(f, "Funzione teorica f(x)", "l");
+    leg->AddEntry(g, Form("Eventi generati (N = %d)", nEvents), "p");
     leg->Draw();
 
-    c->SaveAs("distribuzione_generata.png");
-  }
+    c->SaveAs("funzione_vs_generazione.png");
+}
 
 void studyAgreementNB(const std::vector<int>& N_values,
                       const std::vector<int>& B_values) const {
