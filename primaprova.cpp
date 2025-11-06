@@ -178,6 +178,57 @@ class Simulation {
     cosScaled->Draw();
     c5->SaveAs("cos_scalato.png");
   }
+
+void incertezzaRigenerazione(int nEvents = 10000, int nBins = 50, int nReps = 1000) {
+  std::cout << "Calcolo dell’incertezza da rigenerazione (" << nReps
+            << " ripetizioni)..." << std::endl;
+
+  // Array per salvare la somma e la somma dei quadrati per ogni bin
+  std::vector<double> sum(nBins, 0.0);
+  std::vector<double> sum2(nBins, 0.0);
+
+  // === Ciclo di rigenerazione ===
+  for (int r = 0; r < nReps; ++r) {
+    TH1F* h = generateHistograms(nEvents, nBins);
+    for (int i = 1; i <= nBins; ++i) {
+      double val = h->GetBinContent(i);
+      sum[i - 1]  += val;
+      sum2[i - 1] += val * val;
+    }
+    delete h;
+  }
+
+  // === Calcolo di media e deviazione standard per bin ===
+  std::vector<double> mean(nBins), sigma(nBins), x(nBins), ex(nBins, 0.0);
+
+  double binWidth = (xmax_ - xmin_) / nBins;
+  for (int i = 0; i < nBins; ++i) {
+    mean[i]  = sum[i] / nReps;
+    double mean2 = sum2[i] / nReps;
+    sigma[i] = std::sqrt(mean2 - mean[i] * mean[i]);
+    x[i] = xmin_ + (i + 0.5) * binWidth;
+  }
+
+  // === Grafico con barre d’errore ===
+  TGraphErrors* g_unc = new TGraphErrors(nBins, &x[0], &mean[0], &ex[0], &sigma[0]);
+  g_unc->SetTitle("Incertezza statistica da rigenerazione; x; Conteggio medio");
+  g_unc->SetMarkerStyle(20);
+  g_unc->SetMarkerColor(kAzure + 2);
+  g_unc->SetLineColor(kBlue + 1);
+
+  // === Disegno ===
+  TCanvas* c = new TCanvas("c_unc", "Incertezza da rigenerazione", 900, 600);
+  g_unc->Draw("AP");
+  c->SaveAs("incertezza_rigenerazione.png");
+
+  // === Stampa risultati sintetici ===
+  std::cout << "\nBin\t<x>\tConteggio medio\tSigma\n";
+  for (int i = 0; i < nBins; ++i) {
+    std::cout << i + 1 << "\t" << x[i]
+              << "\t" << mean[i]
+              << "\t" << sigma[i] << std::endl;
+  }
+}
 };
 
 // === MAIN ===
@@ -192,6 +243,7 @@ int main() {
   sim.drawFunctionAndGenerated();
   sim.generateEvents(10000, 100);
   sim.generateHistograms(10000, 100);
+  sim.incertezzaRigenerazione(10000, 50, 1000);
 
   return 0;
 }
