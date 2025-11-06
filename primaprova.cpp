@@ -229,6 +229,71 @@ void incertezzaRigenerazione(int nEvents = 10000, int nBins = 50, int nReps = 10
               << "\t" << sigma[i] << std::endl;
   }
 }
+
+void incertezzaBinSmeering(int nBins = 50, int nReps = 100) {
+  std::cout << "=== Stima dell'incertezza da Bin-smeering ===" << std::endl;
+
+  // === 1. Funzione teorica normalizzata ===
+  TF1* f = f_cos();
+  double norm = 1. / f->Integral(xmin_, xmax_);
+  TF1* f_scaled = f_cos(norm);
+
+  // === 2. Calcolo del valore teorico medio per bin ===
+  std::vector<double> x(nBins), fVal(nBins), sigma(nBins, 0.), ex(nBins, 0.0);
+  double binWidth = (xmax_ - xmin_) / nBins;
+
+  for (int i = 0; i < nBins; ++i) {
+    double xlow = xmin_ + i * binWidth;
+    double xup  = xlow + binWidth;
+    x[i] = (xlow + xup) / 2.0;
+    fVal[i] = f_scaled->Integral(xlow, xup);  // valore teorico nel bin
+  }
+
+  // === 3. Preparazione per le fluttuazioni gaussiane ===
+  std::vector<double> sum(nBins, 0.0);
+  std::vector<double> sum2(nBins, 0.0);
+
+  // === 4. Esegui nReps fluttuazioni gaussiane per ogni bin ===
+  for (int rep = 0; rep < nReps; ++rep) {
+    for (int i = 0; i < nBins; ++i) {
+      // Definisci l’incertezza relativa, es. 10% oppure sqrt(f_i)
+      double sigma_i = std::sqrt(std::max(fVal[i], 1e-8)); // statistica Poissoniana
+      double fluctuated = gRandom->Gaus(fVal[i], sigma_i);
+
+      sum[i]  += fluctuated;
+      sum2[i] += fluctuated * fluctuated;
+    }
+  }
+
+  // === 5. Calcolo media e deviazione standard per bin ===
+  std::vector<double> mean(nBins);
+  for (int i = 0; i < nBins; ++i) {
+    mean[i] = sum[i] / nReps;
+    double mean2 = sum2[i] / nReps;
+    sigma[i] = std::sqrt(mean2 - mean[i] * mean[i]);
+  }
+
+  // === 6. Disegno grafico con barre d'errore ===
+  TGraphErrors* g_smeering =
+      new TGraphErrors(nBins, &x[0], &mean[0], &ex[0], &sigma[0]);
+  g_smeering->SetTitle("Incertezza da Bin-smeering; x; Valore medio fluttuato");
+  g_smeering->SetMarkerStyle(20);
+  g_smeering->SetMarkerColor(kGreen + 2);
+  g_smeering->SetLineColor(kGreen + 3);
+
+  TCanvas* c = new TCanvas("c_smeering", "Bin-smeering", 900, 600);
+  g_smeering->Draw("AP");
+  c->SaveAs("incertezza_bin_smeering.png");
+
+  // === 7. Stampa risultati numerici ===
+  std::cout << "\nBin\t<x>\tValore medio\tSigma(fluttuazioni)" << std::endl;
+  for (int i = 0; i < nBins; ++i) {
+    std::cout << i + 1 << "\t" << x[i] << "\t" << mean[i] << "\t" << sigma[i] << std::endl;
+  }
+
+  std::cout << "\nFile salvato: incertezza_bin_smeering.png" << std::endl;
+}
+
 };
 
 // === MAIN ===
@@ -244,7 +309,7 @@ int main() {
   sim.generateEvents(10000, 100);
   sim.generateHistograms(10000, 100);
   sim.incertezzaRigenerazione(10000, 50, 1000);
-
+  sim.incertezzaBinSmeering(50, 100);
   return 0;
 }
 
