@@ -75,7 +75,7 @@ class Simulation {
     return new TGraph(vx.size(), &vx[0], &vy[0]);
   }
 
-  void generateHistograms(int nEvents, int nBins) {
+  TH1F* generateHistograms(int nEvents, int nBins) {
     // Creazione degli istogrammi
     TH1F* h_x =
         new TH1F(Form("h_x_%d", nEvents), "Distribuzione X", nBins, 0., 0.6);
@@ -104,6 +104,7 @@ class Simulation {
     // Pulizia della memoria
     delete h_x;
     delete c1;
+    return h_x;
   }
 
   // Prima prova 5. Disegna insieme la funzione teorica e i punti generati
@@ -141,45 +142,42 @@ class Simulation {
     c->SaveAs("funzione_vs_generazione.png");
   }
 
-  /*
+  void accordo(int nEvents = 1000, int nBins = 50) { // normalizza HIST e TF1
+    TH1F* hist1 = (TH1F*)(generateHistograms(nEvents, nBins)->Clone("hist1"));
+    hist1->Scale(1. / hist1->Integral()), "width";
 
-  void studyAgreementNB(const std::vector<int>& N_values,
-                        const std::vector<int>& B_values) const {
-    std::cout << "\n>>> [Studio dell’accordo al variare di N e B] <<<"
-              << std::endl;
+    TF1* cos1     = (TF1*)(f_cos()->Clone("cos1"));
+    double cosInt = cos1->Integral(0., 0.6);
 
-    TF1 f_theory(
-        "f_theory", [this](double* x, double*) { return this->f(x[0]); }, xmin_,
-        xmax_, 0);
-    f_theory.SetNpx(1000);
+    TF1* cosScaled = (TF1*)(f_cos(1 / cosInt)->Clone("cosScaled"));
+    std::cout << "Hist integral: " << hist1->Integral() << "\n";
+    std::cout << "Cos integral: " << cosScaled->Integral(0., 0.6) << "\n";
 
-    for (int N : N_values) {
-      for (int B : B_values) {
-        TH1D h(Form("h_%d_%d", N, B),
-               Form("Accordo con N=%d, B=%d; x; Conteggi", N, B), B, xmin_,
-               xmax_);
-
-        // Generazione eventi
-        TRandom3 rnd(0);
-        for (int i = 0; i < N; ++i) h.Fill(f_theory.GetRandom());
-
-        // Calcolo chi^2 rispetto alla funzione teorica
-        double chi2 = 0;
-        for (int i = 1; i <= B; ++i) {
-          double x = h.GetBinCenter(i);
-          double y_data = h.GetBinContent(i);
-          double y_theo = f_theory.Eval(x) * h.GetBinWidth(1) * N;
-          double err = std::sqrt(std::max(y_data, 1.0));
-          chi2 += std::pow((y_data - y_theo) / err, 2);
-        }
-
-        double chi2ndf = chi2 / B;
-        std::cout << "N=" << N << ", B=" << B << " → χ²/ndf = " << chi2ndf
-                  << std::endl;
-      }
+    std::vector<double> diff, sigma;
+    auto binWidth = 0.6 / nBins;
+    for (int i = 0; i < nBins; ++i) {
+      double xlow        = hist1->GetBinLowEdge(i + 1);
+      double xup         = hist1->GetBinLowEdge(i + 2);
+            double cosIntegral = cosScaled->Integral(xlow, xup);
+      diff.push_back(cosIntegral - hist1->GetBinContent(i + 1));
+      sigma.push_back(cosIntegral);
     }
-    std::cout << "----------------------------------------\n";
-  } */
+
+    double chiSquared;
+
+    for (int i = 0; i < nBins; ++i) {
+      chiSquared += std::pow(diff[i] / std::sqrt(sigma[i]), 2);
+    }
+
+    std::cout << "Chi quadro: " << chiSquared << "\n";
+
+    TCanvas* c4 = new TCanvas("c4", "Hist scalato", 800, 600);
+    hist1->Draw("HIST");
+    c4->SaveAs("istrogramma_norm.png");
+    TCanvas* c5 = new TCanvas("c5", "Coseno scalato", 800, 600);
+    cosScaled->Draw();
+    c5->SaveAs("cos_scalato.png");
+  }
 };
 
 // === MAIN ===
@@ -197,3 +195,4 @@ int main() {
 
   return 0;
 }
+
